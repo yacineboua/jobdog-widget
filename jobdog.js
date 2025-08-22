@@ -1,45 +1,43 @@
 (function () {
-      // ---- SCOPED STYLES (prevents Webflow overrides) ----
-  const style = document.createElement('style');
-  style.textContent = `
-    #jobdog { --bg:#fff; --border:#e5e7eb; --muted:#6b7280; --radius:16px;
-              font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-              max-width: 960px; margin: 24px auto; }
-    #jobdog *, #jobdog *::before, #jobdog *::after { box-sizing: border-box; }
-
-    #jobdog header { display:flex; justify-content:space-between; align-items:center; }
-    #jobdog h2 { margin:0; font-size:22px; font-weight:700; }
-
-    #jobdog .wrap { position:relative; height:540px; }
-    #jobdog .card {
-      position:absolute; inset:0; background:var(--bg); border:1px solid var(--border);
-      border-radius:var(--radius); padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.06);
-      display:flex; flex-direction:column;
-    }
-
-    #jobdog button, #jobdog a.btn { all: unset; }
-    #jobdog button, #jobdog a.btn {
-      display:inline-flex; align-items:center; gap:6px;
-      padding:8px 12px; border:1px solid var(--border); border-radius:10px;
-      background:#fff; cursor:pointer; font:inherit; line-height:1.2; text-decoration:none;
-    }
-    #jobdog button:active { transform: translateY(1px); }
-  `;
-  document.head.appendChild(style);
-
-  // ---- Your existing init/render logic below ----
-  document.addEventListener('DOMContentLoaded', () => {
-    const mount = document.getElementById('jobdog');
-    if (!mount) return console.error('No #jobdog container found');
-    mount.innerHTML = `<p>✅ Widget running</p>`;
-    // rest of your job rendering + swipe logic here
-  });
     function init() {
       const mount = document.getElementById('jobdog');
       if (!mount) return console.error('[jobdog] #jobdog mount not found');
   
-      // 1) Inject the widget markup
+      // 1) Inject the widget markup with scoped styles
       mount.innerHTML = `
+        <style>
+          #jobdog * { box-sizing: border-box; }
+          #jobdog button {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            margin: 0;
+          }
+          #jobdog button:hover {
+            background: #f5f5f5;
+          }
+          #jobdog h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+          }
+          #jobdog p {
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.7;
+          }
+          #jobdog a {
+            color: #007bff;
+            text-decoration: none;
+          }
+          #jobdog a:hover {
+            text-decoration: underline;
+          }
+        </style>
         <header style="display:flex;gap:8px;align-items:center;justify-content:space-between">
           <h2 style="margin:0">Swipe Internships</h2>
           <div>
@@ -121,16 +119,16 @@
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             ${logo}
             <div>
-              <div style="font-weight:700">${title}</div>
-              <div style="opacity:.8">${company}${loc ? " • " + loc : ""}</div>
+              <div style="font-weight:700;font-size:16px;margin:0;padding:0">${title}</div>
+              <div style="opacity:.8;font-size:14px;margin:0;padding:0">${company}${loc ? " • " + loc : ""}</div>
             </div>
           </div>
-          <div style="font-size:14px;line-height:1.4;white-space:pre-wrap;flex:1;overflow:auto">${descr}</div>
+          <div style="font-size:14px;line-height:1.4;white-space:pre-wrap;flex:1;overflow:auto;margin:0;padding:0">${descr}</div>
           <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;font-size:13px">${people}</div>
           <div style="margin-top:12px;display:flex;gap:8px">
-            <a href="${apply}" target="_blank" rel="noopener" style="padding:8px 12px;border:1px solid #ddd;border-radius:10px;text-decoration:none">Open Apply</a>
-            <button class="save" style="padding:8px 12px;border:1px solid #ddd;border-radius:10px;background:#f7fff7">Save</button>
-            <button class="skip" style="padding:8px 12px;border:1px solid #ddd;border-radius:10px;background:#fff7f7">Skip</button>
+            <a href="${apply}" target="_blank" rel="noopener" style="padding:8px 12px;border:1px solid #ddd;border-radius:10px;text-decoration:none;background:#fff;color:#007bff;font-size:14px;font-family:inherit">Open Apply</a>
+            <button class="save" style="padding:8px 12px;border:1px solid #ddd;border-radius:10px;background:#f7fff7;font-size:14px;font-family:inherit;cursor:pointer">Save</button>
+            <button class="skip" style="padding:8px 12px;border:1px solid #ddd;border-radius:10px;background:#fff7f7;font-size:14px;font-family:inherit;cursor:pointer">Skip</button>
           </div>
         `;
         el.dataset.jobId = job.job_id || `${company}-${title}`;
@@ -221,12 +219,12 @@
           const company = job.employer_name || "Company";
           const people = companyPeopleLinks(company).map(l => `<a href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`).join(' · ');
           return `
-            <div style="border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:8px">
-              <div style="font-weight:600">${job.job_title || "Internship"} — ${company}</div>
-              <div style="opacity:.8">${job.job_location || ""}</div>
-              <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">${people}</div>
+            <div style="border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:8px;background:#fff">
+              <div style="font-weight:600;font-size:16px;margin:0;padding:0">${job.job_title || "Internship"} — ${company}</div>
+              <div style="opacity:.8;font-size:14px;margin:0;padding:0">${job.job_location || ""}</div>
+              <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;font-size:13px">${people}</div>
               <div style="margin-top:8px">
-                <a href="${job.job_apply_link || job.job_google_link || '#'}" target="_blank" rel="noopener">Open Apply ↗</a>
+                <a href="${job.job_apply_link || job.job_google_link || '#'}" target="_blank" rel="noopener" style="color:#007bff;text-decoration:none;font-size:14px">Open Apply ↗</a>
               </div>
             </div>
           `;
