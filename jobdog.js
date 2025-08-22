@@ -1,4 +1,39 @@
 (function () {
+      // ---- SCOPED STYLES (prevents Webflow overrides) ----
+  const style = document.createElement('style');
+  style.textContent = `
+    #jobdog { --bg:#fff; --border:#e5e7eb; --muted:#6b7280; --radius:16px;
+              font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+              max-width: 960px; margin: 24px auto; }
+    #jobdog *, #jobdog *::before, #jobdog *::after { box-sizing: border-box; }
+
+    #jobdog header { display:flex; justify-content:space-between; align-items:center; }
+    #jobdog h2 { margin:0; font-size:22px; font-weight:700; }
+
+    #jobdog .wrap { position:relative; height:540px; }
+    #jobdog .card {
+      position:absolute; inset:0; background:var(--bg); border:1px solid var(--border);
+      border-radius:var(--radius); padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.06);
+      display:flex; flex-direction:column;
+    }
+
+    #jobdog button, #jobdog a.btn { all: unset; }
+    #jobdog button, #jobdog a.btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:8px 12px; border:1px solid var(--border); border-radius:10px;
+      background:#fff; cursor:pointer; font:inherit; line-height:1.2; text-decoration:none;
+    }
+    #jobdog button:active { transform: translateY(1px); }
+  `;
+  document.head.appendChild(style);
+
+  // ---- Your existing init/render logic below ----
+  document.addEventListener('DOMContentLoaded', () => {
+    const mount = document.getElementById('jobdog');
+    if (!mount) return console.error('No #jobdog container found');
+    mount.innerHTML = `<p>✅ Widget running</p>`;
+    // rest of your job rendering + swipe logic here
+  });
     function init() {
       const mount = document.getElementById('jobdog');
       if (!mount) return console.error('[jobdog] #jobdog mount not found');
@@ -175,7 +210,7 @@
         card.addEventListener('touchmove',  e => onMove(e.touches[0].clientX), {passive:true});
         card.addEventListener('touchend', onUp);
   
-        card.querySelector('.save').addEventListener('click', () => nextCard('save', true));
+        card.querySelector('.save').addEventListener('click', () => nextCard('save', false));
         card.querySelector('.skip').addEventListener('click', () => nextCard('skip', false));
       }
   
@@ -210,7 +245,7 @@
         renderSaved();
       });
       skipBtn.addEventListener('click', () => nextCard('skip'));
-      saveBtn.addEventListener('click', () => nextCard('save', true));
+      saveBtn.addEventListener('click', () => nextCard('save', false));
       applyBtn.addEventListener('click', () => {
         const job = jobs[idx];
         if (job) window.open(job.job_apply_link || job.job_google_link || '#', '_blank', 'noopener');
