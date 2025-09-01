@@ -43,11 +43,13 @@
           <div>
             <button id="viewCards">Cards</button>
             <button id="viewSaved">Saved</button>
+            <button id="viewApplied">Applied</button>
           </div>
         </header>
   
         <div id="cardsWrap" style="position:relative;height:540px;margin-top:12px;"></div>
         <div id="savedWrap" style="display:none;margin-top:16px;"></div>
+        <div id="appliedWrap" style="display:none;margin-top:16px;"></div>
   
         <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
           <button id="skipBtn">Skip ⬅️</button>
@@ -65,20 +67,24 @@
   
       const cardsWrap = q('#cardsWrap');
       const savedWrap = q('#savedWrap');
+      const appliedWrap = q('#appliedWrap');
       const viewCards = q('#viewCards');
       const viewSaved = q('#viewSaved');
+      const viewApplied = q('#viewApplied');
       const skipBtn = q('#skipBtn');
       const saveBtn = q('#saveBtn');
       const applyBtn = q('#applyBtn');
   
       // 3) Guard in case markup changes
-      if (!cardsWrap || !savedWrap || !viewCards || !viewSaved || !skipBtn || !applyBtn || !saveBtn) {
+      if (!cardsWrap || !savedWrap || !appliedWrap || !viewCards || !viewSaved || !viewApplied || !skipBtn || !applyBtn || !saveBtn) {
         console.error('[jobdog] expected elements missing'); 
         return;
       }
   
-      const LS_KEY = 'jobdog_saved_v1';
-      const saved = new Map((JSON.parse(localStorage.getItem(LS_KEY) || '[]')).map(j => [j.job_id, j]));
+      const SAVED_LS_KEY = 'jobdog_saved_v1';
+      const APPLIED_LS_KEY = 'jobdog_applied_v1';
+      const saved = new Map((JSON.parse(localStorage.getItem(SAVED_LS_KEY) || '[]')).map(j => [j.job_id, j]));
+      const applied = new Map((JSON.parse(localStorage.getItem(APPLIED_LS_KEY) || '[]')).map(j => [j.job_id, j]));
       let jobs = [];
       let idx = 0;
   
@@ -151,13 +157,20 @@
       function saveJob(job) {
         if (!job) return;
         saved.set(job.job_id || `${job.employer_name}-${job.job_title}`, job);
-        localStorage.setItem(LS_KEY, JSON.stringify(Array.from(saved.values())));
+        localStorage.setItem(SAVED_LS_KEY, JSON.stringify(Array.from(saved.values())));
+      }
+
+      function applyToJob(job) {
+        if (!job) return;
+        applied.set(job.job_id || `${job.employer_name}-${job.job_title}`, job);
+        localStorage.setItem(APPLIED_LS_KEY, JSON.stringify(Array.from(applied.values())));
       }
   
       function nextCard(action, openApply=false) {
         const job = jobs[idx];
         if (!job) return;
         if (action === 'save') saveJob(job);
+        if (action === 'apply') applyToJob(job);
         if (openApply) window.open(job.job_apply_link || job.job_google_link || '#', '_blank', 'noopener');
         idx++;
         renderStack();
@@ -179,11 +192,11 @@
           dragging = false;
           const threshold = 120;
           if (currentX > threshold) {
-            // Right = Save + (optional) open apply
+            // Right = Apply (save to applied list)
             card.style.transition = 'transform .2s ease, opacity .2s ease';
             card.style.transform = `translate(500px,-40px) rotate(12deg)`;
             card.style.opacity = '0';
-            setTimeout(() => nextCard('save', /*open*/ true), 180);
+            setTimeout(() => nextCard('apply', false), 180);
           } else if (currentX < -threshold) {
             // Left = Skip
             card.style.transition = 'transform .2s ease, opacity .2s ease';
@@ -230,29 +243,58 @@
           `;
         }).join('');
       }
+
+      function renderApplied() {
+        const list = Array.from(applied.values());
+        if (!list.length) { appliedWrap.innerHTML = "<p>No applied internships yet.</p>"; return; }
+        appliedWrap.innerHTML = list.map(job => {
+          const company = job.employer_name || "Company";
+          const people = companyPeopleLinks(company).map(l => `<a href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`).join(' · ');
+          return `
+            <div style="border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:8px;background:#f7fff7">
+              <div style="font-weight:600;font-size:16px;margin:0;padding:0">${job.job_title || "Internship"} — ${company}</div>
+              <div style="opacity:.8;font-size:14px;margin:0;padding:0">${job.job_location || ""}</div>
+              <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;font-size:13px">${people}</div>
+              <div style="margin-top:8px">
+                <a href="${job.job_apply_link || job.job_google_link || '#'}" target="_blank" rel="noopener" style="color:#007bff;text-decoration:none;font-size:14px">Open Apply ↗</a>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
   
       // Controls
       viewCards.addEventListener('click', () => {
         cardsWrap.style.display = '';
         savedWrap.style.display = 'none';
+        appliedWrap.style.display = 'none';
         renderStack();
       });
       viewSaved.addEventListener('click', () => {
         cardsWrap.style.display = 'none';
         savedWrap.style.display = '';
+        appliedWrap.style.display = 'none';
         renderSaved();
+      });
+      viewApplied.addEventListener('click', () => {
+        cardsWrap.style.display = 'none';
+        savedWrap.style.display = 'none';
+        appliedWrap.style.display = '';
+        renderApplied();
       });
       skipBtn.addEventListener('click', () => nextCard('skip'));
       saveBtn.addEventListener('click', () => nextCard('save', false));
       applyBtn.addEventListener('click', () => {
         const job = jobs[idx];
-        if (job) window.open(job.job_apply_link || job.job_google_link || '#', '_blank', 'noopener');
+        if (job) {
+          nextCard('apply', false);
+        }
       });
   
       // Keyboard shortcuts
       window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft')  nextCard('skip');
-        if (e.key === 'ArrowRight') nextCard('save', true);
+        if (e.key === 'ArrowRight') nextCard('apply', false);
         if (e.key === 'Enter')      applyBtn.click();
       });
   
