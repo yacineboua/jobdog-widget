@@ -44,12 +44,14 @@
             <button id="viewCards">Cards</button>
             <button id="viewSaved">Saved</button>
             <button id="viewApplied">Applied</button>
+            <button id="viewNetworking">Networking</button>
           </div>
         </header>
   
         <div id="cardsWrap" style="position:relative;height:540px;margin-top:12px;"></div>
         <div id="savedWrap" style="display:none;margin-top:16px;"></div>
         <div id="appliedWrap" style="display:none;margin-top:16px;"></div>
+        <div id="networkingWrap" style="display:none;margin-top:16px;"></div>
   
         <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
           <button id="skipBtn">Skip ⬅️</button>
@@ -68,15 +70,17 @@
       const cardsWrap = q('#cardsWrap');
       const savedWrap = q('#savedWrap');
       const appliedWrap = q('#appliedWrap');
+      const networkingWrap = q('#networkingWrap');
       const viewCards = q('#viewCards');
       const viewSaved = q('#viewSaved');
       const viewApplied = q('#viewApplied');
+      const viewNetworking = q('#viewNetworking');
       const skipBtn = q('#skipBtn');
       const saveBtn = q('#saveBtn');
       const applyBtn = q('#applyBtn');
   
       // 3) Guard in case markup changes
-      if (!cardsWrap || !savedWrap || !appliedWrap || !viewCards || !viewSaved || !viewApplied || !skipBtn || !applyBtn || !saveBtn) {
+      if (!cardsWrap || !savedWrap || !appliedWrap || !networkingWrap || !viewCards || !viewSaved || !viewApplied || !viewNetworking || !skipBtn || !applyBtn || !saveBtn) {
         console.error('[jobdog] expected elements missing'); 
         return;
       }
@@ -96,6 +100,70 @@
           {label: "👩‍💻 SWE / Intern Mentors", url: q(`site:linkedin.com/in ("software engineer" OR "SWE") "${company}" "intern"`)},
           {label: "🧑‍💼 Eng Managers", url: q(`site:linkedin.com/in ("engineering manager" OR "manager software") "${company}"`)},
           {label: "🎓 Campus Programs", url: q(`${company} university recruiting internship`)}
+        ];
+      }
+
+      function getNetworkingContacts(company) {
+        const enc = encodeURIComponent;
+        const q = (s) => `https://www.google.com/search?q=${enc(s)}`;
+        return [
+          {
+            priority: 1,
+            category: "High Priority",
+            color: "#ff6b6b",
+            contacts: [
+              {
+                title: "University Recruiters",
+                description: "Direct hiring managers for internships",
+                searchUrl: q(`site:linkedin.com/in ("university recruiter" OR "campus recruiter") "${company}"`),
+                icon: "🎯"
+              },
+              {
+                title: "Engineering Managers",
+                description: "Team leads who make hiring decisions",
+                searchUrl: q(`site:linkedin.com/in ("engineering manager" OR "software manager") "${company}"`),
+                icon: "👨‍💼"
+              }
+            ]
+          },
+          {
+            priority: 2,
+            category: "Medium Priority", 
+            color: "#4ecdc4",
+            contacts: [
+              {
+                title: "Senior Software Engineers",
+                description: "Potential mentors and referral sources",
+                searchUrl: q(`site:linkedin.com/in ("senior software engineer" OR "staff engineer") "${company}"`),
+                icon: "👩‍💻"
+              },
+              {
+                title: "Recent Interns",
+                description: "Get insider tips and experiences",
+                searchUrl: q(`site:linkedin.com/in ("software engineer intern" OR "intern") "${company}" 2023 2024`),
+                icon: "🎓"
+              }
+            ]
+          },
+          {
+            priority: 3,
+            category: "Low Priority",
+            color: "#95a5a6",
+            contacts: [
+              {
+                title: "HR & Talent Acquisition",
+                description: "General recruitment contacts",
+                searchUrl: q(`site:linkedin.com/in ("talent acquisition" OR "HR") "${company}"`),
+                icon: "📋"
+              },
+              {
+                title: "Company Alumni",
+                description: "Former employees who can provide insights",
+                searchUrl: q(`site:linkedin.com/in ("former" OR "ex") "${company}" software engineer`),
+                icon: "👥"
+              }
+            ]
+          }
         ];
       }
   
@@ -262,25 +330,94 @@
           `;
         }).join('');
       }
+
+      function renderNetworking() {
+        const appliedList = Array.from(applied.values());
+        if (!appliedList.length) { 
+          networkingWrap.innerHTML = "<p>No applied internships yet. Apply to some jobs first to see networking contacts!</p>"; 
+          return; 
+        }
+
+        // Group applied jobs by company to avoid duplicates
+        const companies = new Map();
+        appliedList.forEach(job => {
+          const company = job.employer_name || "Company";
+          if (!companies.has(company)) {
+            companies.set(company, job);
+          }
+        });
+
+        networkingWrap.innerHTML = Array.from(companies.values()).map(job => {
+          const company = job.employer_name || "Company";
+          const jobTitle = job.job_title || "Internship";
+          const networkingContacts = getNetworkingContacts(company);
+          
+          return `
+            <div style="border:1px solid #eee;border-radius:16px;padding:16px;margin-bottom:20px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.05)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+                <div style="font-weight:700;font-size:18px;color:#333">${company}</div>
+                <div style="background:#e8f5e8;color:#2d5a2d;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500">Applied</div>
+              </div>
+              <div style="font-size:14px;color:#666;margin-bottom:16px">${jobTitle}</div>
+              
+              ${networkingContacts.map(priorityGroup => `
+                <div style="margin-bottom:16px">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                    <div style="width:12px;height:12px;border-radius:50%;background:${priorityGroup.color}"></div>
+                    <div style="font-weight:600;font-size:14px;color:#333">${priorityGroup.category}</div>
+                  </div>
+                  <div style="display:grid;gap:8px">
+                    ${priorityGroup.contacts.map(contact => `
+                      <div style="border:1px solid #f0f0f0;border-radius:8px;padding:12px;background:#fafafa;transition:all 0.2s ease">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                          <span style="font-size:16px">${contact.icon}</span>
+                          <div style="font-weight:600;font-size:14px;color:#333">${contact.title}</div>
+                        </div>
+                        <div style="font-size:12px;color:#666;margin-bottom:8px">${contact.description}</div>
+                        <a href="${contact.searchUrl}" target="_blank" rel="noopener" 
+                           style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#007bff;color:white;text-decoration:none;border-radius:6px;font-size:12px;font-weight:500;transition:background 0.2s ease"
+                           onmouseover="this.style.background='#0056b3'" 
+                           onmouseout="this.style.background='#007bff'">
+                          🔍 Find on LinkedIn
+                        </a>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }).join('');
+      }
   
       // Controls
       viewCards.addEventListener('click', () => {
         cardsWrap.style.display = '';
         savedWrap.style.display = 'none';
         appliedWrap.style.display = 'none';
+        networkingWrap.style.display = 'none';
         renderStack();
       });
       viewSaved.addEventListener('click', () => {
         cardsWrap.style.display = 'none';
         savedWrap.style.display = '';
         appliedWrap.style.display = 'none';
+        networkingWrap.style.display = 'none';
         renderSaved();
       });
       viewApplied.addEventListener('click', () => {
         cardsWrap.style.display = 'none';
         savedWrap.style.display = 'none';
         appliedWrap.style.display = '';
+        networkingWrap.style.display = 'none';
         renderApplied();
+      });
+      viewNetworking.addEventListener('click', () => {
+        cardsWrap.style.display = 'none';
+        savedWrap.style.display = 'none';
+        appliedWrap.style.display = 'none';
+        networkingWrap.style.display = '';
+        renderNetworking();
       });
       skipBtn.addEventListener('click', () => nextCard('skip'));
       saveBtn.addEventListener('click', () => nextCard('save', false));
