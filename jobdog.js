@@ -117,6 +117,7 @@
         </header>
   
         <div id="cardsWrap" style="position:relative;height:540px;margin-top:12px;background:transparent;"></div>
+        <div id="jobCounter" style="text-align:center;margin-top:8px;font-size:14px;color:rgba(255,255,255,0.8);font-weight:500"></div>
         <div id="savedWrap" style="display:none;margin-top:16px;"></div>
         <div id="appliedWrap" style="display:none;margin-top:16px;"></div>
         <div id="networkingWrap" style="display:none;margin-top:16px;"></div>
@@ -136,6 +137,7 @@
       const q = (sel) => mount.querySelector(sel);
   
       const cardsWrap = q('#cardsWrap');
+      const jobCounter = q('#jobCounter');
       const savedWrap = q('#savedWrap');
       const appliedWrap = q('#appliedWrap');
       const networkingWrap = q('#networkingWrap');
@@ -148,7 +150,7 @@
       const applyBtn = q('#applyBtn');
   
       // 3) Guard in case markup changes
-      if (!cardsWrap || !savedWrap || !appliedWrap || !networkingWrap || !viewCards || !viewSaved || !viewApplied || !viewNetworking || !skipBtn || !applyBtn || !saveBtn) {
+      if (!cardsWrap || !jobCounter || !savedWrap || !appliedWrap || !networkingWrap || !viewCards || !viewSaved || !viewApplied || !viewNetworking || !skipBtn || !applyBtn || !saveBtn) {
         console.error('[jobdog] expected elements missing'); 
         return;
       }
@@ -324,6 +326,16 @@
         return el;
       }
   
+      function updateJobCounter() {
+        const remaining = jobs.length - idx;
+        const total = jobs.length;
+        if (remaining > 0) {
+          jobCounter.textContent = `${remaining} of ${total} jobs left`;
+        } else {
+          jobCounter.textContent = "No more jobs! 🎉";
+        }
+      }
+
       function renderStack() {
         console.log('[jobdog] renderStack called, jobs.length:', jobs.length, 'idx:', idx);
         cardsWrap.innerHTML = '';
@@ -338,6 +350,7 @@
           console.log('[jobdog] Card appended to DOM, cardsWrap children:', cardsWrap.children.length);
           attachSwipe(c, job);
         });
+        updateJobCounter();
       }
   
       function saveJob(job) {
@@ -452,7 +465,7 @@
       function renderNetworking() {
         const appliedList = Array.from(applied.values());
         if (!appliedList.length) { 
-          networkingWrap.innerHTML = "<p>No applied internships yet. Apply to some jobs first to see networking contacts!</p>"; 
+          networkingWrap.innerHTML = "<p style='text-align:center;color:rgba(255,255,255,0.8);font-size:16px;margin:40px 0'>No applied internships yet. Apply to some jobs first to see networking contacts!</p>"; 
           return; 
         }
 
@@ -465,52 +478,97 @@
           }
         });
 
-        networkingWrap.innerHTML = Array.from(companies.values()).map(job => {
-          const company = job.employer_name || "Company";
-          const jobTitle = job.job_title || "Internship";
-          const networkingContacts = getNetworkingContacts(company);
-          
-          return `
-            <div style="border:1px solid rgba(255,255,255,0.3);border-radius:16px;padding:16px;margin-bottom:20px;background:rgba(255,255,255,0.9);backdrop-filter: blur(10px);box-shadow:0 4px 12px rgba(0,0,0,0.1)">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-                <div style="font-weight:700;font-size:18px;color:#333">${company}</div>
-                <div style="background:rgba(102,126,234,0.2);color:#667eea;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500">Applied</div>
+        const companyList = Array.from(companies.values());
+        
+        networkingWrap.innerHTML = `
+          <div style="display:flex;gap:20px;margin-top:16px;height:500px">
+            <!-- Company List Sidebar -->
+            <div style="width:250px;background:rgba(255,255,255,0.1);border-radius:12px;padding:16px;overflow-y:auto">
+              <h3 style="margin:0 0 16px 0;color:white;font-size:16px;font-weight:600">Applied Companies</h3>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                ${companyList.map((job, index) => {
+                  const company = job.employer_name || "Company";
+                  return `
+                    <button class="company-btn" data-company="${company}" 
+                            style="text-align:left;padding:12px;border:none;border-radius:8px;background:rgba(255,255,255,0.1);color:white;cursor:pointer;transition:all 0.2s ease;font-size:14px;font-weight:500"
+                            onmouseover="this.style.background='rgba(255,255,255,0.2)'" 
+                            onmouseout="this.style.background='rgba(255,255,255,0.1)'"
+                            onclick="showCompanyNetworking('${company}')">
+                      ${company}
+                    </button>
+                  `;
+                }).join('')}
               </div>
-              <div style="font-size:14px;color:#666;margin-bottom:16px">${jobTitle}</div>
-              
-              ${networkingContacts.map(priorityGroup => `
-                <div style="margin-bottom:16px">
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                    <div style="width:12px;height:12px;border-radius:50%;background:${priorityGroup.color}"></div>
-                    <div style="font-weight:600;font-size:14px;color:#333">${priorityGroup.category}</div>
-                  </div>
-                  <div style="display:grid;gap:8px">
-                    ${priorityGroup.contacts.map(contact => `
-                      <div style="border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:12px;background:rgba(255,255,255,0.6);backdrop-filter: blur(5px);transition:all 0.2s ease">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                          <span style="font-size:16px">${contact.icon}</span>
-                          <div style="font-weight:600;font-size:14px;color:#333">${contact.title}</div>
-                        </div>
-                        <div style="font-size:12px;color:#666;margin-bottom:8px">${contact.description}</div>
-                        <a href="${contact.searchUrl}" target="_blank" rel="noopener" 
-                           style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#667eea;color:white;text-decoration:none;border-radius:6px;font-size:12px;font-weight:500;transition:all 0.2s ease"
-                           onmouseover="this.style.background='#5a6fd8';this.style.transform='translateY(-1px)'" 
-                           onmouseout="this.style.background='#667eea';this.style.transform='translateY(0)'">
-                          🔍 Find on LinkedIn
-                        </a>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-              `).join('')}
             </div>
-          `;
-        }).join('');
+            
+            <!-- Networking Details -->
+            <div id="networkingDetails" style="flex:1;background:rgba(255,255,255,0.1);border-radius:12px;padding:20px;overflow-y:auto">
+              <p style="text-align:center;color:rgba(255,255,255,0.8);font-size:16px;margin:40px 0">Select a company to view networking contacts</p>
+            </div>
+          </div>
+        `;
       }
+
+      // Global function to show company networking details
+      window.showCompanyNetworking = function(company) {
+        const detailsDiv = document.getElementById('networkingDetails');
+        if (!detailsDiv) return;
+        
+        // Find the job for this company
+        const appliedList = Array.from(applied.values());
+        const job = appliedList.find(j => (j.employer_name || "Company") === company);
+        if (!job) return;
+        
+        const jobTitle = job.job_title || "Internship";
+        const networkingContacts = getNetworkingContacts(company);
+        
+        // Update active button
+        document.querySelectorAll('.company-btn').forEach(btn => {
+          btn.style.background = 'rgba(255,255,255,0.1)';
+        });
+        document.querySelector(`[data-company="${company}"]`).style.background = 'rgba(102,126,234,0.3)';
+        
+        detailsDiv.innerHTML = `
+          <div style="margin-bottom:20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <h2 style="margin:0;font-size:24px;color:white;font-weight:700">${company}</h2>
+              <div style="background:rgba(102,126,234,0.2);color:#667eea;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500">Applied</div>
+            </div>
+            <div style="font-size:16px;color:rgba(255,255,255,0.8);margin-bottom:20px">${jobTitle}</div>
+          </div>
+          
+          ${networkingContacts.map(priorityGroup => `
+            <div style="margin-bottom:24px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+                <div style="width:12px;height:12px;border-radius:50%;background:${priorityGroup.color}"></div>
+                <h3 style="margin:0;font-weight:600;font-size:18px;color:white">${priorityGroup.category}</h3>
+              </div>
+              <div style="display:grid;gap:12px">
+                ${priorityGroup.contacts.map(contact => `
+                  <div style="border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:16px;background:rgba(255,255,255,0.9);backdrop-filter: blur(10px);transition:all 0.2s ease">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                      <span style="font-size:20px">${contact.icon}</span>
+                      <div style="font-weight:600;font-size:16px;color:#333">${contact.title}</div>
+                    </div>
+                    <div style="font-size:14px;color:#666;margin-bottom:12px;line-height:1.4">${contact.description}</div>
+                    <a href="${contact.searchUrl}" target="_blank" rel="noopener" 
+                       style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#667eea;color:white;text-decoration:none;border-radius:8px;font-size:14px;font-weight:500;transition:all 0.2s ease"
+                       onmouseover="this.style.background='#5a6fd8';this.style.transform='translateY(-1px)'" 
+                       onmouseout="this.style.background='#667eea';this.style.transform='translateY(0)'">
+                      🔍 Find on LinkedIn
+                    </a>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        `;
+      };
   
       // Controls
       viewCards.addEventListener('click', () => {
         cardsWrap.style.display = '';
+        jobCounter.style.display = '';
         savedWrap.style.display = 'none';
         appliedWrap.style.display = 'none';
         networkingWrap.style.display = 'none';
@@ -518,6 +576,7 @@
       });
       viewSaved.addEventListener('click', () => {
         cardsWrap.style.display = 'none';
+        jobCounter.style.display = 'none';
         savedWrap.style.display = '';
         appliedWrap.style.display = 'none';
         networkingWrap.style.display = 'none';
@@ -525,6 +584,7 @@
       });
       viewApplied.addEventListener('click', () => {
         cardsWrap.style.display = 'none';
+        jobCounter.style.display = 'none';
         savedWrap.style.display = 'none';
         appliedWrap.style.display = '';
         networkingWrap.style.display = 'none';
@@ -532,6 +592,7 @@
       });
       viewNetworking.addEventListener('click', () => {
         cardsWrap.style.display = 'none';
+        jobCounter.style.display = 'none';
         savedWrap.style.display = 'none';
         appliedWrap.style.display = 'none';
         networkingWrap.style.display = '';
