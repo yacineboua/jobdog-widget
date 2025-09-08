@@ -103,7 +103,7 @@
           }
         </style>
         <div class="jobdog-logo">
-          <img src="jobdog logo.png" alt="Jobdog Logo" style="width: 40px; height: 40px; background: transparent; border: none; display: block;">
+          <img src="https://github.com/yacineboua/jobdog-widget/blob/main/jobdog_logo.png" alt="Jobdog Logo" style="width: 40px; height: 40px; background: transparent; border: none; display: block;">
           <h1>jobdog</h1>
         </div>
         <header style="display:flex;gap:8px;align-items:center;justify-content:space-between">
